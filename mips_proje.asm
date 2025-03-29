@@ -20,18 +20,42 @@ main :
 	li $v0, 8
 	syscall # Reading user input string (password)
 	
+	add $t0, $a0, $zero
+	
+	li $v0, 9 # Allocating memory from heap to store the copy of the user input string
+	li $a0, 50
+	syscall
+	
+	add $a1, $v0, $zero # a1 will have the user input string copy that we will manipulate
+	add $a0, $t0, $zero # a0 will have the user input string that we check
+	
+	jal copy_input
+	
 	jal number_counter # Calling number_counter function
 	
-	slti $t0, $v0, 7 # Checking whether the number count is below 7 or not
-	beq $t0, 1, print_error # If below 7 jump to count_error and exit
+	
 	
 	jal uppercase_check
 	
-	beq $v0, 0, print_error
+	
 	
 	jal lowercase_check
 	
-	beq $v0, 0, print_error
+	
+	
+	jal digit_check
+	
+	
+	
+	jal star_check
+	
+	
+	
+	jal same_check
+	
+	
+	
+	beq $s0, 1, print_error
 	
 	li $v0, 4
 	la $a0, output
@@ -41,9 +65,9 @@ main :
 	la $a0, strong
 	syscall
 	
-	li $v0, 10 # All things are done in main function, so... quit
-	syscall
+	j main
 print_error:
+	
 	# Notify user by printing strings then exit
 	li $v0, 4
 	la $a0, output
@@ -53,8 +77,35 @@ print_error:
 	la $a0, not_strong
 	syscall
 	
-	li $v0, 10
+	li $v0, 4
+	la $a0, please_consider
 	syscall
+	
+	li $v0, 4
+	add $a0, $a1, $zero
+	syscall
+	
+	j main
+	
+copy_input:
+	addi $sp, $sp, -4
+	sw $a0, 0($sp)
+	addi $sp, $sp, -4
+	sw $a1, 0($sp)
+	copy_loop:
+		lb $t0, ($a0)
+		beq $t0, 10, end_copy
+		sb $t0, ($a1)
+		addi $a0, $a0, 1
+		addi $a1, $a1, 1
+		j copy_loop
+	end_copy:
+		sb $t0, ($a1)
+		lw $a1, ($sp)
+		addi $sp, $sp, 4
+		lw $a0, ($sp)
+		addi $sp, $sp, 4
+		jr $ra
 	
 number_counter:
 	addi $sp, $sp, -4
@@ -67,10 +118,51 @@ number_counter:
 		addi $a0, $a0, 1 # Increment a0 so that we can read the next character's address
 		j count_letters
 	end_count :
-		lw $a0, 0($sp) # Loading back the a0 from stack
-		addi $sp, $sp, 4
 		add $v0, $t1, $zero # Copying t1 to v0 for returning the total count
+		slti $t0, $v0, 7 # Checking whether the number count is below 7 or not
+		beq $t0, 1, go_correct_number # If below 7 jump to count_error and exit
+		resume_end_count:
+			lw $a0, 0($sp) # Loading back the a0 from stack
+			addi $sp, $sp, 4 
+			jr $ra
+	go_correct_number:
+		addi $t4, $ra, 0
+		jal correct_number
+		addi $ra, $t4, 0
+		j resume_end_count
+		
+correct_number:
+	addi $sp, $sp, -4
+	sw $a0, 0($sp)
+	li $s0, 1
+	addi $t0, $v0, -7 # How many more characters needed ?
+	not $t0, $t0
+	addi $t0, $t0, 1 # Converted the negative difference result to positive
+	add $t1, $a1, $v0 # t1 holds the character after the last character
+	addi $t2, $t1, -1
+	li $t3, 97
+	correct_number_loop:
+		lb $s1, ($t2)
+		beq $s1, $t3, increment_char
+		beq $t0, 0, finish_correct_number
+		sb $t3, ($t1)
+		addi $t3, $t3, 1
+		addi $t1, $t1, 1
+		addi $t2, $t2, 1
+		addi $t0, $t0, -1
+		j correct_number_loop
+	increment_char:
+		addi $t3, $t3, 1
+		j correct_number_loop
+	finish_correct_number:
+		lw $a0, 0($sp) # Restore a0 which holds the address of the start of the input string
+		addi $sp, $sp, 4
+		li $t3, 10
+		sb $t3, ($t1)
 		jr $ra
+		
+	
+	
 		
 uppercase_check:
 	addi $sp, $sp, -4 # Store the a0 in stack as we will modify it in this procedure
@@ -93,7 +185,9 @@ uppercase_check:
 	false_upper:
 		lw $a0, 0($sp) # Restore a0 which holds the address of the start of the input string
 		addi $sp, $sp, 4
-		li $v0, 0 # Return false
+		li $v0, 0 # Return 
+		li $v1, 1 # Return the number that indicates which rule i violated
+		li $s0, 1 
 		jr $ra
 		
 lowercase_check:
@@ -118,7 +212,104 @@ lowercase_check:
 		lw $a0, 0($sp) # Restore a0 which holds the address of the start of the input string
 		addi $sp, $sp, 4
 		li $v0, 0 # Return false
+		li $v1, 2 # Return the number that indicates which rule i violated
+		li $s0, 1
 		jr $ra
+		
+digit_check:
+	addi $sp, $sp, -4 # Store the a0 in stack as we will modify it in this procedure
+	sw $a0, 0($sp)
+	count_digit:
+		lb $t0, 0($a0)
+		li $t1, 47
+		slt $t3, $t1, $t0
+		slti $t4, $t0, 58
+		and $t5, $t3, $t4
+		beq $t5, 1, end_digit
+		beq $t0, 10, false_digit
+		addi $a0, $a0, 1
+		j count_digit
+	end_digit:
+		lw $a0, 0($sp) # Restore a0 which holds the address of the start of the input string
+		addi $sp, $sp, 4
+		li $v0, 1 # Return true in v0
+		jr $ra 
+	false_digit:
+		lw $a0, 0($sp) # Restore a0 which holds the address of the start of the input string
+		addi $sp, $sp, 4
+		li $v0, 0 # Return false
+		li $v1, 3 # Return the number that indicates which rule i violated
+		li $s0, 1
+		jr $ra
+		
+star_check:
+	addi $sp, $sp, -4 # Store the a0 in stack as we will modify it in this procedure
+	sw $a0, 0($sp)
+	li $t3, 0
+	li $t4, 0
+	count_star:
+		lb $t0, 0($a0)
+		li $t1, 42
+		li $t2, 43
+		add $t5, $t3, $zero
+		add $t6, $t4, $zero
+		seq $t3, $t0, $t1
+		seq $t4, $t0, $t2
+		or $t3, $t3, $t5
+		or $t4, $t4, $t6
+		and $s0, $t3, $t4
+		beq $s0, 1, end_star
+		beq $t0, 10, false_star
+		addi $a0, $a0, 1
+		j count_star
+	end_star:
+		lw $a0, 0($sp) # Restore a0 which holds the address of the start of the input string
+		addi $sp, $sp, 4
+		li $v0, 1 # Return true in v0
+		jr $ra 
+	false_star:
+		lw $a0, 0($sp) # Restore a0 which holds the address of the start of the input string
+		addi $sp, $sp, 4
+		li $v0, 0 # Return false
+		li $v1, 4 # Return the number that indicates which rule i violated
+		li $s0, 1
+		jr $ra
+		
+same_check:
+	addi $sp, $sp, -4 # Store the a0 in stack as we will modify it in this procedure
+	sw $a0, 0($sp)
+	addi $sp, $sp, -4 # Store the a1 in stack as we will modify it in this procedure
+	sw $a1, 0($sp)
+	add $a1, $a0, $zero
+	addi $a3, $a0, 1
+	same_loop:
+		lb $t1, ($a1)
+		lb $t2, ($a3)
+		beq $t1, $t2, false_same
+		beq $t2, 10, end_same
+		addi $a1, $a1, 1
+		addi $a3, $a3, 1
+		j same_loop
+	false_same:
+		li $v0, 0
+		lw $a1, ($sp)
+		addi $sp, $sp, 4
+		lw $a0, ($sp)
+		addi $sp, $sp, 4
+		jr $ra
+	end_same:
+		li $v0, 1
+		lw $a1, ($sp)
+		addi $sp, $sp, 4
+		lw $a0, ($sp)
+		addi $sp, $sp, 4
+		jr $ra
+	
+		
+		 
+		
+		
+	
 		
 	
 	
