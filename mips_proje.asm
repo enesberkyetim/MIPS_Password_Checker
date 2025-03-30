@@ -33,26 +33,17 @@ main :
 	
 	jal number_counter # Calling number_counter function
 	
-	
-	
 	jal uppercase_check
-	
-	
 	
 	jal lowercase_check
 	
-	
-	
 	jal digit_check
-	
-	
 	
 	jal star_check
 	
-	
+	jal plus_check
 	
 	jal same_check
-	
 	
 	
 	beq $s0, 1, print_error
@@ -185,9 +176,30 @@ uppercase_check:
 	false_upper:
 		lw $a0, 0($sp) # Restore a0 which holds the address of the start of the input string
 		addi $sp, $sp, 4
-		li $v0, 0 # Return 
-		li $v1, 1 # Return the number that indicates which rule i violated
-		li $s0, 1 
+		li $s0, 1
+		add $t3, $ra, $zero
+		jal correct_uppercase
+		add $ra, $t3, $zero
+		jr $ra
+		
+correct_uppercase:
+	addi $sp, $sp, -4 # Store the a0 in stack as we will modify it in this procedure
+	sw $a0, 0($sp)
+	li $t0, 0
+	add $t0, $a1, $t0
+	find_end:
+		lb $t1, ($t0)
+		beq $t1, 10, resume_end
+		addi $t0, $t0, 1
+		j find_end
+	resume_end:
+		li $t1, 90
+		sb $t1, ($t0)
+		addi $t0, $t0, 1
+		li $t1, 10
+		sb $t1, ($t0)
+		lw $a0, 0($sp)
+		addi $sp, $sp, 4
 		jr $ra
 		
 lowercase_check:
@@ -211,9 +223,28 @@ lowercase_check:
 	false_lower:
 		lw $a0, 0($sp) # Restore a0 which holds the address of the start of the input string
 		addi $sp, $sp, 4
-		li $v0, 0 # Return false
-		li $v1, 2 # Return the number that indicates which rule i violated
 		li $s0, 1
+		add $t3, $ra, $zero
+		jal correct_lowercase
+		add $ra, $t3, $zero
+		jr $ra
+		
+correct_lowercase:
+	addi $sp, $sp, -4 # Store the a0 in stack as we will modify it in this procedure
+	sw $a0, 0($sp)
+	li $t0, 0
+	add $t0, $a1, $t0
+	find_end2:
+		lb $t1, ($t0)
+		beq $t1, 10, resume_end2
+		addi $t0, $t0, 1
+		j find_end2
+	resume_end2:
+		li $t1, 122
+		sb $t1, ($t0)
+		addi $t0, $t0, 1
+		li $t1, 10
+		sb $t1, ($t0)
 		jr $ra
 		
 digit_check:
@@ -237,9 +268,28 @@ digit_check:
 	false_digit:
 		lw $a0, 0($sp) # Restore a0 which holds the address of the start of the input string
 		addi $sp, $sp, 4
-		li $v0, 0 # Return false
-		li $v1, 3 # Return the number that indicates which rule i violated
 		li $s0, 1
+		add $t3, $ra, $zero
+		jal correct_digit
+		add $ra, $t3, $zero
+		jr $ra
+		
+correct_digit:
+	addi $sp, $sp, -4 # Store the a0 in stack as we will modify it in this procedure
+	sw $a0, 0($sp)
+	li $t0, 0
+	add $t0, $a1, $t0
+	find_end3:
+		lb $t1, ($t0)
+		beq $t1, 10, resume_end3
+		addi $t0, $t0, 1
+		j find_end3
+	resume_end3:
+		li $t1, 57
+		sb $t1, ($t0)
+		addi $t0, $t0, 1
+		li $t1, 10
+		sb $t1, ($t0)
 		jr $ra
 		
 star_check:
@@ -250,15 +300,8 @@ star_check:
 	count_star:
 		lb $t0, 0($a0)
 		li $t1, 42
-		li $t2, 43
-		add $t5, $t3, $zero
-		add $t6, $t4, $zero
 		seq $t3, $t0, $t1
-		seq $t4, $t0, $t2
-		or $t3, $t3, $t5
-		or $t4, $t4, $t6
-		and $s0, $t3, $t4
-		beq $s0, 1, end_star
+		beq $t3, 1, end_star
 		beq $t0, 10, false_star
 		addi $a0, $a0, 1
 		j count_star
@@ -270,9 +313,73 @@ star_check:
 	false_star:
 		lw $a0, 0($sp) # Restore a0 which holds the address of the start of the input string
 		addi $sp, $sp, 4
-		li $v0, 0 # Return false
-		li $v1, 4 # Return the number that indicates which rule i violated
 		li $s0, 1
+		add $t3, $ra, $zero
+		jal correct_star
+		add $ra, $t3, $zero
+		jr $ra
+
+correct_star:
+	addi $sp, $sp, -4 # Store the a0 in stack as we will modify it in this procedure
+	sw $a0, 0($sp)
+	li $t0, 0
+	add $t0, $a1, $t0
+	find_end4:
+		lb $t1, ($t0)
+		beq $t1, 10, resume_end4
+		addi $t0, $t0, 1
+		j find_end4
+	resume_end4:
+		li $t1, 42
+		sb $t1, ($t0)
+		addi $t0, $t0, 1
+		li $t1, 10
+		sb $t1, ($t0)
+		jr $ra
+		
+plus_check:
+	addi $sp, $sp, -4 # Store the a0 in stack as we will modify it in this procedure
+	sw $a0, 0($sp)
+	li $t3, 0
+	li $t4, 0
+	count_plus:
+		lb $t0, 0($a0)
+		li $t1, 43
+		seq $t3, $t0, $t1
+		beq $t3, 1, end_plus
+		beq $t0, 10, false_plus
+		addi $a0, $a0, 1
+		j count_plus
+	end_plus:
+		lw $a0, 0($sp) # Restore a0 which holds the address of the start of the input string
+		addi $sp, $sp, 4
+		li $v0, 1 # Return true in v0
+		jr $ra 
+	false_plus:
+		lw $a0, 0($sp) # Restore a0 which holds the address of the start of the input string
+		addi $sp, $sp, 4
+		li $s0, 1
+		add $t3, $ra, $zero
+		jal correct_plus
+		add $ra, $t3, $zero
+		jr $ra
+
+correct_plus:
+	addi $sp, $sp, -4 # Store the a0 in stack as we will modify it in this procedure
+	sw $a0, 0($sp)
+	li $t0, 0
+	add $t0, $a1, $t0
+	find_end5:
+		lb $t1, ($t0)
+		beq $t1, 10, resume_end5
+		addi $t0, $t0, 1
+		j find_end5
+	resume_end5:
+		li $t1, 43
+		sb $t1, ($t0)
+		addi $t0, $t0, 1
+		li $t1, 10
+		sb $t1, ($t0)
 		jr $ra
 		
 same_check:
@@ -291,11 +398,14 @@ same_check:
 		addi $a3, $a3, 1
 		j same_loop
 	false_same:
-		li $v0, 0
 		lw $a1, ($sp)
 		addi $sp, $sp, 4
 		lw $a0, ($sp)
 		addi $sp, $sp, 4
+		li $s0, 1
+		add $t3, $ra, $zero
+		jal correct_same
+		add $ra, $t3, $zero
 		jr $ra
 	end_same:
 		li $v0, 1
@@ -306,8 +416,39 @@ same_check:
 		jr $ra
 	
 		
-		 
-		
+correct_same:		 
+	addi $sp, $sp, -4 # Store the a0 in stack as we will modify it in this procedure
+	sw $a0, 0($sp)
+	addi $sp, $sp, -4 # Store the a1 in stack as we will modify it in this procedure
+	sw $a1, 0($sp)
+	addi $t0, $a1, 0
+	addi $t1, $a1, 1
+	addi $t2, $a1, 2
+	li $s2, 75	
+	iter_string:
+		lb $t4, ($t0)
+		lb $t5, ($t1)
+		lb $t6, ($t2)
+		beq $t5, 10, end_correct_same
+		seq $s3, $t4, $t5
+		beq $s3, 1, change_char
+		seq $s3, $t5, $t6
+		beq $s3, 1, change_char
+		addi $t0, $t0, 1
+		addi $t1, $t1, 1
+		addi $t2, $t2, 1
+		j iter_string
+	change_char:
+		sb $s2, ($t1)
+		addi $s2, $s2, 1
+		j iter_string
+	end_correct_same:
+		lw $a1, ($sp)
+		addi $sp, $sp, 4
+		lw $a0, ($sp)
+		addi $sp, $sp, 4
+		li $s0, 1
+		jr $ra
 		
 	
 		
