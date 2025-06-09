@@ -1,4 +1,4 @@
-# MIPS Password Strength Checker & Auto-Fixer
+# MIPS Password Strength Checker
 
 > **Course:** CSE 3038 – Computer Organization  
 > **Semester:** Spring 2025  
